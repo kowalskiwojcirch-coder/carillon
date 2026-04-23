@@ -2,103 +2,69 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Carillon Piano</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+<title>Piano Carillon PRO</title>
 
 <style>
 body {
-    font-family: 'Montserrat', sans-serif;
-    background: #f5f5f5;
-    margin: 0;
+    font-family: Arial;
     text-align: center;
-    padding: 20px;
-}
-
-h2 {
-    color: #4A4A4A;
-    font-weight: 600;
-    letter-spacing: 1px;
+    background: #f5f5f5;
 }
 
 button {
-    padding: 12px 22px;
+    padding: 12px 20px;
     margin: 10px;
     background: #C7912B;
     color: white;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
-    font-weight: 600;
-    transition: 0.2s;
-}
-
-button:hover {
-    transform: translateY(-2px);
-    background: #b37d22;
-}
-
-.kontener {
-    max-width: 1100px;
-    margin: auto;
 }
 
 .piano {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    margin-top: 25px;
+    width: 1100px;
+    margin: 20px auto;
 }
 
 .key {
-    width: 58px;
-    height: 160px;
-    background: #ffffff;
-    border: 2px solid #e0e0e0;
+    width: 60px;
+    height: 140px;
+    background: white;
+    border: 1px solid #ccc;
     margin: 2px;
-    border-radius: 6px;
     cursor: pointer;
     display: flex;
     align-items: flex-end;
     justify-content: center;
     font-size: 11px;
-    color: #4A4A4A;
-    font-weight: 600;
     user-select: none;
-    transition: 0.15s;
-}
-
-.key:hover {
-    border-color: #C7912B;
-    box-shadow: 0 0 10px rgba(199,145,43,0.25);
 }
 
 .key:active {
-    background: #fff6e0;
-    transform: scale(0.98);
+    background: #C7912B;
+    color: white;
 }
 </style>
 </head>
 
 <body>
 
-<div class="kontener">
-
-<h2>🔔 CARILLON PIANO</h2>
+<h2>🎹 PIANO CARILLON PRO</h2>
 
 <button onclick="initAudio()">▶ START AUDIO</button>
 <button onclick="connectMIDI()">🔌 MIDI</button>
 
 <div id="piano" class="piano"></div>
 
-</div>
-
 <script>
 
 let ctx;
 let buffer;
 
-// 🔊 LOAD SAMPLE
+// 🔥 LOAD SAMPLE ONCE
 async function initAudio() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -109,23 +75,21 @@ async function initAudio() {
     alert("Audio gotowe 🔊");
 }
 
-// 🔔 PLAY (krótki naturalny carillon)
+// 🎼 PLAY (prawdziwy pitch jak pianino)
 function play(note) {
 
-    if (!ctx || !buffer) return;
+    if (!buffer || !ctx) return;
 
     const source = ctx.createBufferSource();
     const gain = ctx.createGain();
 
     source.buffer = buffer;
 
-    // 🎹 pianino pitch
+    // 🎹 12-TET (dokładna skala pianina)
     const semitone = note - 60;
     source.playbackRate.value = Math.pow(2, semitone / 12);
 
-    // 🔔 KRÓTKI NATURALNY DZWON (jak wcześniej)
-    gain.gain.setValueAtTime(0.95, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
+    gain.gain.value = 0.6;
 
     source.connect(gain);
     gain.connect(ctx.destination);
@@ -133,7 +97,7 @@ function play(note) {
     source.start();
 }
 
-// 🎹 SKALA
+// 🎹 PIANO UI (C C# D ...)
 const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","H"];
 
 const piano = document.getElementById("piano");
@@ -141,15 +105,14 @@ const piano = document.getElementById("piano");
 const start = 48;
 const end = 84;
 
-// 🎹 UI
 for (let i = start; i <= end; i++) {
 
-    const n = names[i % 12];
+    const noteName = names[i % 12];
     const octave = Math.floor(i / 12) - 1;
 
     const key = document.createElement("div");
     key.className = "key";
-    key.innerText = n + octave;
+    key.innerText = noteName + octave;
 
     key.onclick = () => play(i);
 
