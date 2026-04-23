@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Carillon Piano LONG</title>
+<title>Carillon Piano</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
 
@@ -84,7 +84,7 @@ button:hover {
 
 <div class="kontener">
 
-<h2>🔔 CARILLON PIANO LONG</h2>
+<h2>🔔 CARILLON PIANO</h2>
 
 <button onclick="initAudio()">▶ START AUDIO</button>
 <button onclick="connectMIDI()">🔌 MIDI</button>
@@ -109,7 +109,7 @@ async function initAudio() {
     alert("Audio gotowe 🔊");
 }
 
-// 🔔 PLAY (long carillon + piano pitch)
+// 🔔 PLAY (krótki naturalny carillon)
 function play(note) {
 
     if (!ctx || !buffer) return;
@@ -119,13 +119,13 @@ function play(note) {
 
     source.buffer = buffer;
 
-    // 🎹 12-TET (jak pianino)
+    // 🎹 pianino pitch
     const semitone = note - 60;
     source.playbackRate.value = Math.pow(2, semitone / 12);
 
-    // 🔔 DŁUGI, NATURALNY CARILLON
-    gain.gain.setValueAtTime(1.0, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 3.8);
+    // 🔔 KRÓTKI NATURALNY DZWON (jak wcześniej)
+    gain.gain.setValueAtTime(0.95, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
 
     source.connect(gain);
     gain.connect(ctx.destination);
