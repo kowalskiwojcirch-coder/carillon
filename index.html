@@ -2,149 +2,160 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Carillon HDMI</title>
+<title>Carillon MIDI Piano</title>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
-
 body {
-    font-family: 'Montserrat', sans-serif;
+    font-family: Arial;
     background: #f5f5f5;
-    margin: 0;
-    padding: 20px;
     text-align: center;
 }
 
-.container {
-    max-width: 1200px;
+button {
+    padding: 12px 20px;
+    margin: 20px;
+    font-size: 16px;
+    background: #C7912B;
+    border: none;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.piano {
+    position: relative;
+    width: 1000px;
+    height: 200px;
     margin: auto;
 }
 
-.hdmi-btn {
-    background: #C7912B;
-    color: white;
-    border: none;
-    padding: 15px 30px;
-    border-radius: 10px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-bottom: 30px;
-}
-
-.hdmi-btn.active {
-    background: #4CAF50;
-}
-
-.keyboard {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-    gap: 6px;
-}
-
-.key {
+.white {
+    width: 40px;
+    height: 200px;
     background: white;
-    border: 2px solid #ddd;
-    border-radius: 6px;
-    padding: 10px;
-    cursor: pointer;
-    transition: 0.15s;
+    border: 1px solid #ccc;
+    float: left;
+    position: relative;
+    z-index: 1;
 }
 
-.key:hover {
-    border-color: #C7912B;
+.black {
+    width: 25px;
+    height: 120px;
+    background: black;
+    position: absolute;
+    z-index: 2;
+    margin-left: -12px;
 }
 
-.key.active {
-    background: #fff3cd;
-    border-color: #C7912B;
-    color: #C7912B;
-}
-
-.note {
-    font-size: 10px;
-    margin-top: 4px;
-    font-weight: bold;
+.active {
+    background: #C7912B !important;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
-    <h2>CARILLON HDMI</h2>
-    <button id="hdmiBtn" class="hdmi-btn">🔌 Podłącz HDMI</button>
-    <div id="keyboard" class="keyboard"></div>
-</div>
+<h2>🎹 Carillon MIDI</h2>
+<button onclick="connectMIDI()">🔌 Podłącz keyboard (MIDI)</button>
+
+<div id="piano" class="piano"></div>
 
 <script>
-let audioEnabled = false;
-
-document.getElementById("hdmiBtn").onclick = () => {
-    audioEnabled = true;
-    document.getElementById("hdmiBtn").classList.add("active");
-    document.getElementById("hdmiBtn").innerText = "✅ HDMI Podłączone";
-};
-
-// --- CONFIG ---
-const totalKeys = 96; // możesz zmienić np 120
-const basePitch = 1;
 const baseFile = "C'''.mp3";
+const activeNotes = {};
 
-const notes = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const piano = document.getElementById("piano");
 
-const keyboard = document.getElementById("keyboard");
+// MIDI zakres (np 48–84 = 3 oktawy)
+const startNote = 48;
+const endNote = 84;
 
-const activeSounds = {};
+const whiteNotes = [0,2,4,5,7,9,11];
 
-for (let i = 0; i < totalKeys; i++) {
+let keyMap = {};
 
-    const key = document.createElement("div");
-    key.className = "key";
+function createPiano() {
+    let whiteIndex = 0;
 
-    const note = notes[i % 12];
-    const octave = Math.floor(i / 12) + 1;
+    for (let i = startNote; i <= endNote; i++) {
 
-    key.innerHTML = `
-        ${i+1}
-        <div class="note">${note}${octave}</div>
-    `;
+        const note = i % 12;
 
-    const pitch = basePitch * Math.pow(2, i / 12);
+        if (whiteNotes.includes(note)) {
+            const key = document.createElement("div");
+            key.className = "white";
+            key.dataset.note = i;
+            piano.appendChild(key);
 
-    const play = () => {
-        if (!audioEnabled) return;
+            keyMap[i] = key;
 
-        if (activeSounds[i]) {
-            activeSounds[i].pause();
-            delete activeSounds[i];
-            key.classList.remove("active");
+            whiteIndex++;
+
         } else {
-            const audio = new Audio(baseFile);
-            audio.loop = true;
-            audio.preservesPitch = false;
-            audio.playbackRate = pitch;
+            const key = document.createElement("div");
+            key.className = "black";
+            key.dataset.note = i;
 
-            audio.play().then(() => {
-                activeSounds[i] = audio;
-                key.classList.add("active");
-            });
+            key.style.left = (whiteIndex * 40 - 12) + "px";
+
+            piano.appendChild(key);
+            keyMap[i] = key;
         }
-    };
-
-    key.onclick = play;
-
-    keyboard.appendChild(key);
+    }
 }
 
-// --- KEYBOARD CONTROL ---
-document.addEventListener("keydown", (e) => {
-    if (!audioEnabled) return;
+createPiano();
 
-    const index = e.keyCode - 49; // 1-9 itd.
-    if (index >= 0 && index < totalKeys) {
-        keyboard.children[index].click();
+// --- AUDIO ---
+function playNote(note, velocity=1) {
+    const pitch = Math.pow(2, (note - 60) / 12);
+
+    const audio = new Audio(baseFile);
+    audio.playbackRate = pitch;
+    audio.volume = velocity;
+    audio.preservesPitch = false;
+
+    audio.play();
+
+    activeNotes[note] = audio;
+
+    if (keyMap[note]) keyMap[note].classList.add("active");
+}
+
+function stopNote(note) {
+    if (activeNotes[note]) {
+        activeNotes[note].pause();
+        delete activeNotes[note];
     }
-});
+    if (keyMap[note]) keyMap[note].classList.remove("active");
+}
+
+// --- MIDI ---
+function connectMIDI() {
+    if (!navigator.requestMIDIAccess) {
+        alert("Brak wsparcia MIDI w przeglądarce (użyj Chrome)");
+        return;
+    }
+
+    navigator.requestMIDIAccess().then(midi => {
+        const inputs = midi.inputs.values();
+
+        for (let input of inputs) {
+            input.onmidimessage = (msg) => {
+                const [cmd, note, velocity] = msg.data;
+
+                if (cmd === 144 && velocity > 0) {
+                    playNote(note, velocity / 127);
+                } else if (cmd === 128 || velocity === 0) {
+                    stopNote(note);
+                }
+            };
+        }
+
+        alert("Keyboard podłączony 🎹");
+    });
+}
 </script>
 
 </body>
