@@ -1,1 +1,151 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Carillon HDMI</title>
 
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+    text-align: center;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+}
+
+.hdmi-btn {
+    background: #C7912B;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 30px;
+}
+
+.hdmi-btn.active {
+    background: #4CAF50;
+}
+
+.keyboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 6px;
+}
+
+.key {
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    cursor: pointer;
+    transition: 0.15s;
+}
+
+.key:hover {
+    border-color: #C7912B;
+}
+
+.key.active {
+    background: #fff3cd;
+    border-color: #C7912B;
+    color: #C7912B;
+}
+
+.note {
+    font-size: 10px;
+    margin-top: 4px;
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>CARILLON HDMI</h2>
+    <button id="hdmiBtn" class="hdmi-btn">🔌 Podłącz HDMI</button>
+    <div id="keyboard" class="keyboard"></div>
+</div>
+
+<script>
+let audioEnabled = false;
+
+document.getElementById("hdmiBtn").onclick = () => {
+    audioEnabled = true;
+    document.getElementById("hdmiBtn").classList.add("active");
+    document.getElementById("hdmiBtn").innerText = "✅ HDMI Podłączone";
+};
+
+// --- CONFIG ---
+const totalKeys = 96; // możesz zmienić np 120
+const basePitch = 1;
+const baseFile = "C'''.mp3";
+
+const notes = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+const keyboard = document.getElementById("keyboard");
+
+const activeSounds = {};
+
+for (let i = 0; i < totalKeys; i++) {
+
+    const key = document.createElement("div");
+    key.className = "key";
+
+    const note = notes[i % 12];
+    const octave = Math.floor(i / 12) + 1;
+
+    key.innerHTML = `
+        ${i+1}
+        <div class="note">${note}${octave}</div>
+    `;
+
+    const pitch = basePitch * Math.pow(2, i / 12);
+
+    const play = () => {
+        if (!audioEnabled) return;
+
+        if (activeSounds[i]) {
+            activeSounds[i].pause();
+            delete activeSounds[i];
+            key.classList.remove("active");
+        } else {
+            const audio = new Audio(baseFile);
+            audio.loop = true;
+            audio.preservesPitch = false;
+            audio.playbackRate = pitch;
+
+            audio.play().then(() => {
+                activeSounds[i] = audio;
+                key.classList.add("active");
+            });
+        }
+    };
+
+    key.onclick = play;
+
+    keyboard.appendChild(key);
+}
+
+// --- KEYBOARD CONTROL ---
+document.addEventListener("keydown", (e) => {
+    if (!audioEnabled) return;
+
+    const index = e.keyCode - 49; // 1-9 itd.
+    if (index >= 0 && index < totalKeys) {
+        keyboard.children[index].click();
+    }
+});
+</script>
+
+</body>
+</html>
