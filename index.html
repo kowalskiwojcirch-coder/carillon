@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -57,29 +58,41 @@ button {
 <body>
 
 <h2>🎹 Carillon MIDI</h2>
+<button onclick="startAudio()">▶️ Włącz dźwięk</button>
 <button onclick="connectMIDI()">🔌 Podłącz keyboard (MIDI)</button>
 
 <div id="piano" class="piano"></div>
 
 <script>
-const baseFile = "C'''.mp3";
-const activeNotes = {};
+// --- AUDIO ENGINE (działa zawsze) ---
+let audioCtx;
+let masterGain;
 
+function startAudio() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.3;
+    masterGain.connect(audioCtx.destination);
+    alert("Dźwięk włączony 🔊");
+}
+
+// --- OPCJONALNY MP3 ---
+const baseFile = "C3.mp3"; // możesz dodać plik lub zostawić
+
+// --- PIANO ---
 const piano = document.getElementById("piano");
 
-// MIDI zakres (np 48–84 = 3 oktawy)
 const startNote = 48;
 const endNote = 84;
 
 const whiteNotes = [0,2,4,5,7,9,11];
-
 let keyMap = {};
+let activeOsc = {};
 
 function createPiano() {
     let whiteIndex = 0;
 
     for (let i = startNote; i <= endNote; i++) {
-
         const note = i % 12;
 
         if (whiteNotes.includes(note)) {
@@ -89,14 +102,11 @@ function createPiano() {
             piano.appendChild(key);
 
             keyMap[i] = key;
-
             whiteIndex++;
-
         } else {
             const key = document.createElement("div");
             key.className = "black";
             key.dataset.note = i;
-
             key.style.left = (whiteIndex * 40 - 12) + "px";
 
             piano.appendChild(key);
@@ -107,41 +117,59 @@ function createPiano() {
 
 createPiano();
 
-// --- AUDIO ---
+// --- PLAY ---
 function playNote(note, velocity=1) {
-    const pitch = Math.pow(2, (note - 60) / 12);
+    if (!audioCtx) return;
 
-    const audio = new Audio(baseFile);
-    audio.playbackRate = pitch;
-    audio.volume = velocity;
-    audio.preservesPitch = false;
+    const freq = 440 * Math.pow(2, (note - 69) / 12);
 
-    audio.play();
+    // 🔊 WebAudio (zawsze działa)
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
 
-    activeNotes[note] = audio;
+    osc.type = "sine";
+    osc.frequency.value = freq;
 
+    gain.gain.value = velocity;
+
+    osc.connect(gain);
+    gain.connect(masterGain);
+
+    osc.start();
+
+    activeOsc[note] = {osc, gain};
+
+    // 🎨 wizual
     if (keyMap[note]) keyMap[note].classList.add("active");
+
+    // 🔔 opcjonalny MP3 (jeśli istnieje)
+    const audio = new Audio(baseFile);
+    audio.playbackRate = Math.pow(2, (note - 60) / 12);
+    audio.volume = 0.3;
+    audio.play().catch(()=>{});
 }
 
 function stopNote(note) {
-    if (activeNotes[note]) {
-        activeNotes[note].pause();
-        delete activeNotes[note];
+    if (activeOsc[note]) {
+        activeOsc[note].gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        activeOsc[note].osc.stop(audioCtx.currentTime + 0.3);
+        delete activeOsc[note];
     }
+
     if (keyMap[note]) keyMap[note].classList.remove("active");
 }
 
 // --- MIDI ---
 function connectMIDI() {
     if (!navigator.requestMIDIAccess) {
-        alert("Brak wsparcia MIDI w przeglądarce (użyj Chrome)");
+        alert("Użyj Chrome!");
         return;
     }
 
     navigator.requestMIDIAccess().then(midi => {
-        const inputs = midi.inputs.values();
+        for (let input of midi.inputs.values()) {
+            console.log("🎹", input.name);
 
-        for (let input of inputs) {
             input.onmidimessage = (msg) => {
                 const [cmd, note, velocity] = msg.data;
 
@@ -160,3 +188,4 @@ function connectMIDI() {
 
 </body>
 </html>
+```
