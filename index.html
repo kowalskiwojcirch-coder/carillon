@@ -2,128 +2,72 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Carillon Piano</title>
-
+<title>CARILLON FIX</title>
 <style>
-body {
-    font-family: Arial;
-    background: #f5f5f5;
-    text-align: center;
-}
+body { font-family: Arial; text-align:center; background:#f5f5f5; }
 
 button {
-    padding: 12px 20px;
-    margin: 10px;
-    background: #C7912B;
-    border: none;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
+  padding: 15px 25px;
+  margin: 10px;
+  background:#C7912B;
+  color:white;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
 }
 
 .piano {
-    position: relative;
-    width: 1050px;
-    height: 220px;
-    margin: auto;
+  width: 900px;
+  height: 200px;
+  margin:auto;
 }
 
-.white {
-    width: 50px;
-    height: 220px;
-    background: white;
-    border: 1px solid #ccc;
-    float: left;
-    position: relative;
-    z-index: 1;
-}
-
-.black {
-    width: 30px;
-    height: 140px;
-    background: black;
-    position: absolute;
-    z-index: 2;
-    margin-left: -15px;
-}
-
-.active {
-    background: #C7912B !important;
+.key {
+  display:inline-block;
+  width:40px;
+  height:180px;
+  background:white;
+  border:1px solid #ccc;
+  margin:1px;
 }
 </style>
 </head>
 
 <body>
 
-<h2>🔔 CARILLON PIANO</h2>
+<h2>🔔 CARILLON FIX TEST</h2>
 
-<button onclick="start()">▶ START AUDIO</button>
-<button onclick="connectMIDI()">🔌 MIDI</button>
+<button onclick="unlock()">▶ START AUDIO (WAŻNE)</button>
+<button onclick="midi()">🔌 MIDI</button>
 
-<div id="piano" class="piano"></div>
+<div class="piano" id="piano"></div>
 
 <script>
 
-// ===== AUDIO =====
 let ctx;
 let master;
 
-function start() {
+// 🔊 100% pewny test dźwięku
+function unlock(){
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     master = ctx.createGain();
-    master.gain.value = 0.4;
     master.connect(ctx.destination);
+    master.gain.value = 0.4;
 
-    alert("Audio OK 🔊");
+    // TEST SOUND
+    const osc = ctx.createOscillator();
+    osc.frequency.value = 440;
+    osc.connect(master);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+
+    alert("JEŚLI SŁYSZYSZ BEEP → AUDIO DZIAŁA");
 }
 
-// ===== SKALA CHROMATYCZNA =====
-const notesNames = [
-    "C","C#","D","D#","E","F",
-    "F#","G","G#","A","A#","H"
-];
+// 🔔 CARILLON SOUND
+function play(note){
 
-// ===== PIANO =====
-const piano = document.getElementById("piano");
-
-const startNote = 48; // C3
-const endNote = 84;
-
-const whiteKeys = [0,2,4,5,7,9,11];
-let keyMap = {};
-let whiteIndex = 0;
-
-function buildPiano() {
-
-    for (let i = startNote; i <= endNote; i++) {
-
-        const note = i % 12;
-
-        const key = document.createElement("div");
-
-        if (whiteKeys.includes(note)) {
-            key.className = "white";
-            piano.appendChild(key);
-            keyMap[i] = key;
-            whiteIndex++;
-        } else {
-            key.className = "black";
-            key.style.left = (whiteIndex * 50 - 15) + "px";
-            piano.appendChild(key);
-            keyMap[i] = key;
-        }
-    }
-}
-
-buildPiano();
-
-// ===== DŹWIĘK CARILLON (PITCH Z C) =====
-function playNote(note, velocity=1) {
-    if (!ctx) return;
-
-    // 🔥 CARILLON: wszystko z C (pitch shifting)
-    const baseC = 261.63;
-    const freq = baseC * Math.pow(2, (note - 60) / 12);
+    const freq = 261.63 * Math.pow(2, (note-60)/12);
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -131,38 +75,42 @@ function playNote(note, velocity=1) {
     osc.type = "sine";
     osc.frequency.value = freq;
 
-    // dzwonowy decay
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(velocity, ctx.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.5);
+    gain.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime+0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+2);
 
     osc.connect(gain);
     gain.connect(master);
 
     osc.start();
-    osc.stop(ctx.currentTime + 2.5);
-
-    if (keyMap[note]) {
-        keyMap[note].classList.add("active");
-        setTimeout(()=>keyMap[note].classList.remove("active"), 150);
-    }
+    osc.stop(ctx.currentTime+2);
 }
 
-// ===== MIDI =====
-function connectMIDI() {
-    navigator.requestMIDIAccess().then(midi => {
-        for (let input of midi.inputs.values()) {
+// 🎹 TEST KLAWISZE (BEZ MIDI NA START)
+const piano = document.getElementById("piano");
 
-            input.onmidimessage = (msg) => {
-                const [cmd, note, vel] = msg.data;
+for(let i=60;i<72;i++){
+    const k = document.createElement("div");
+    k.className="key";
+    k.innerText=i;
 
-                if (cmd === 144 && vel > 0) {
-                    playNote(note, vel/127);
+    k.onclick = () => play(i);
+
+    piano.appendChild(k);
+}
+
+// 🎹 MIDI
+function midi(){
+    navigator.requestMIDIAccess().then(m=>{
+        for(let input of m.inputs.values()){
+            input.onmidimessage = e=>{
+                const [cmd,note,vel] = e.data;
+                if(cmd===144 && vel>0){
+                    play(note);
                 }
-            };
+            }
         }
-
-        alert("MIDI OK 🎹");
+        alert("MIDI OK");
     });
 }
 
