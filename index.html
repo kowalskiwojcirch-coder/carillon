@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Carillon MIDI - NO MP3</title>
+<title>Carillon Piano</title>
 
 <style>
 body {
@@ -14,7 +14,6 @@ body {
 button {
     padding: 12px 20px;
     margin: 10px;
-    font-size: 16px;
     background: #C7912B;
     border: none;
     color: white;
@@ -24,26 +23,28 @@ button {
 
 .piano {
     position: relative;
-    width: 1000px;
-    height: 200px;
+    width: 1050px;
+    height: 220px;
     margin: auto;
 }
 
 .white {
-    width: 40px;
-    height: 200px;
+    width: 50px;
+    height: 220px;
     background: white;
     border: 1px solid #ccc;
     float: left;
+    position: relative;
+    z-index: 1;
 }
 
 .black {
-    width: 25px;
-    height: 120px;
+    width: 30px;
+    height: 140px;
     background: black;
     position: absolute;
     z-index: 2;
-    margin-left: -12px;
+    margin-left: -15px;
 }
 
 .active {
@@ -54,105 +55,104 @@ button {
 
 <body>
 
-<h2>🔔 CARILLON MIDI (bez MP3)</h2>
+<h2>🔔 CARILLON PIANO</h2>
 
-<button onclick="startAudio()">▶️ START DŹWIĘKU</button>
+<button onclick="start()">▶ START AUDIO</button>
 <button onclick="connectMIDI()">🔌 MIDI</button>
 
 <div id="piano" class="piano"></div>
 
 <script>
 
-// ===== AUDIO ENGINE =====
+// ===== AUDIO =====
 let ctx;
 let master;
 
-function startAudio() {
+function start() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     master = ctx.createGain();
     master.gain.value = 0.4;
     master.connect(ctx.destination);
 
-    alert("Dźwięk gotowy 🔊");
+    alert("Audio OK 🔊");
 }
 
-// ===== DŹWIĘK DZWONU =====
-function bell(note, velocity=1) {
-    if (!ctx) return;
+// ===== SKALA CHROMATYCZNA =====
+const notesNames = [
+    "C","C#","D","D#","E","F",
+    "F#","G","G#","A","A#","H"
+];
 
-    const freq = 440 * Math.pow(2, (note - 69) / 12);
-
-    // główny ton
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = "sine";
-    osc.frequency.value = freq;
-
-    // efekt "dzwonu"
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(velocity, ctx.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2);
-
-    osc.connect(gain);
-    gain.connect(master);
-
-    osc.start();
-    osc.stop(ctx.currentTime + 2);
-}
-
-// ===== PIANO UI =====
+// ===== PIANO =====
 const piano = document.getElementById("piano");
 
-const startNote = 48;
+const startNote = 48; // C3
 const endNote = 84;
 
-const whiteNotes = [0,2,4,5,7,9,11];
+const whiteKeys = [0,2,4,5,7,9,11];
 let keyMap = {};
+let whiteIndex = 0;
 
-function createPiano() {
-    let whiteIndex = 0;
+function buildPiano() {
 
     for (let i = startNote; i <= endNote; i++) {
+
         const note = i % 12;
 
-        if (whiteNotes.includes(note)) {
-            const key = document.createElement("div");
+        const key = document.createElement("div");
+
+        if (whiteKeys.includes(note)) {
             key.className = "white";
             piano.appendChild(key);
             keyMap[i] = key;
             whiteIndex++;
         } else {
-            const key = document.createElement("div");
             key.className = "black";
-            key.style.left = (whiteIndex * 40 - 12) + "px";
+            key.style.left = (whiteIndex * 50 - 15) + "px";
             piano.appendChild(key);
             keyMap[i] = key;
         }
     }
 }
 
-createPiano();
+buildPiano();
 
-// ===== PLAY =====
-function playNote(note, vel=1) {
-    bell(note, vel);
+// ===== DŹWIĘK CARILLON (PITCH Z C) =====
+function playNote(note, velocity=1) {
+    if (!ctx) return;
+
+    // 🔥 CARILLON: wszystko z C (pitch shifting)
+    const baseC = 261.63;
+    const freq = baseC * Math.pow(2, (note - 60) / 12);
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.value = freq;
+
+    // dzwonowy decay
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(velocity, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.5);
+
+    osc.connect(gain);
+    gain.connect(master);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 2.5);
 
     if (keyMap[note]) {
         keyMap[note].classList.add("active");
-        setTimeout(()=>keyMap[note].classList.remove("active"), 200);
+        setTimeout(()=>keyMap[note].classList.remove("active"), 150);
     }
 }
 
 // ===== MIDI =====
 function connectMIDI() {
-    if (!navigator.requestMIDIAccess) {
-        alert("Użyj Chrome");
-        return;
-    }
-
     navigator.requestMIDIAccess().then(midi => {
         for (let input of midi.inputs.values()) {
+
             input.onmidimessage = (msg) => {
                 const [cmd, note, vel] = msg.data;
 
@@ -162,7 +162,7 @@ function connectMIDI() {
             };
         }
 
-        alert("MIDI podłączone 🎹");
+        alert("MIDI OK 🎹");
     });
 }
 
