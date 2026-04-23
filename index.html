@@ -4,21 +4,39 @@
 <meta charset="UTF-8">
 <title>Piano Carillon PRO</title>
 
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+
 <style>
 body {
-    font-family: Arial;
+    font-family: 'Montserrat', sans-serif;
     text-align: center;
     background: #f5f5f5;
+    margin: 0;
+    padding: 20px;
+}
+
+h2 {
+    color: #4A4A4A;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-top: 10px;
 }
 
 button {
-    padding: 12px 20px;
+    padding: 12px 22px;
     margin: 10px;
     background: #C7912B;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    background: #b37d22;
 }
 
 .piano {
@@ -31,9 +49,9 @@ button {
 
 .key {
     width: 60px;
-    height: 140px;
-    background: white;
-    border: 1px solid #ccc;
+    height: 150px;
+    background: #ffffff;
+    border: 2px solid #e0e0e0;
     margin: 2px;
     cursor: pointer;
     display: flex;
@@ -41,11 +59,20 @@ button {
     justify-content: center;
     font-size: 11px;
     user-select: none;
+    color: #4A4A4A;
+    font-weight: 600;
+    border-radius: 6px;
+    transition: 0.15s;
+}
+
+.key:hover {
+    border-color: #C7912B;
+    box-shadow: 0 0 10px rgba(199,145,43,0.25);
 }
 
 .key:active {
-    background: #C7912B;
-    color: white;
+    background: #fff6e0;
+    transform: scale(0.97);
 }
 </style>
 </head>
@@ -75,7 +102,7 @@ async function initAudio() {
     alert("Audio gotowe 🔊");
 }
 
-// 🎼 PLAY (prawdziwy pitch jak pianino)
+// 🎼 PLAY (pitch jak pianino)
 function play(note) {
 
     if (!buffer || !ctx) return;
@@ -85,7 +112,7 @@ function play(note) {
 
     source.buffer = buffer;
 
-    // 🎹 12-TET (dokładna skala pianina)
+    // 🎹 12-TET
     const semitone = note - 60;
     source.playbackRate.value = Math.pow(2, semitone / 12);
 
@@ -97,7 +124,7 @@ function play(note) {
     source.start();
 }
 
-// 🎹 PIANO UI (C C# D ...)
+// 🎹 UI
 const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","H"];
 
 const piano = document.getElementById("piano");
