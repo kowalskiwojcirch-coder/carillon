@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Carillon MP3 Chromatic</title>
+<title>Piano Carillon PRO</title>
 
 <style>
 body {
@@ -11,26 +11,22 @@ body {
     background: #f5f5f5;
 }
 
-h2 {
-    margin-top: 20px;
-}
-
 button {
     padding: 12px 20px;
     margin: 10px;
     background: #C7912B;
-    border: none;
     color: white;
+    border: none;
     border-radius: 8px;
     cursor: pointer;
 }
 
 .piano {
-    width: 1100px;
-    margin: 20px auto;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    width: 1100px;
+    margin: 20px auto;
 }
 
 .key {
@@ -40,11 +36,10 @@ button {
     border: 1px solid #ccc;
     margin: 2px;
     cursor: pointer;
-    font-size: 11px;
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    padding-bottom: 5px;
+    font-size: 11px;
     user-select: none;
 }
 
@@ -57,63 +52,78 @@ button {
 
 <body>
 
-<h2>🔔 CARILLON MP3 (CHROMATIC)</h2>
+<h2>🎹 PIANO CARILLON PRO</h2>
 
+<button onclick="initAudio()">▶ START AUDIO</button>
 <button onclick="connectMIDI()">🔌 MIDI</button>
 
 <div id="piano" class="piano"></div>
 
 <script>
 
-// 🔔 JEDEN DŹWIĘK BAZOWY
-const baseFile = "C3.mp3";
+let ctx;
+let buffer;
 
-// 🎹 zakres (3 oktawy)
-const startNote = 48;
-const endNote = 84;
+// 🔥 LOAD SAMPLE ONCE
+async function initAudio() {
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-// 🎼 nazwy nut
+    const res = await fetch("C3.mp3");
+    const arr = await res.arrayBuffer();
+    buffer = await ctx.decodeAudioData(arr);
+
+    alert("Audio gotowe 🔊");
+}
+
+// 🎼 PLAY (prawdziwy pitch jak pianino)
+function play(note) {
+
+    if (!buffer || !ctx) return;
+
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+
+    source.buffer = buffer;
+
+    // 🎹 12-TET (dokładna skala pianina)
+    const semitone = note - 60;
+    source.playbackRate.value = Math.pow(2, semitone / 12);
+
+    gain.gain.value = 0.6;
+
+    source.connect(gain);
+    gain.connect(ctx.destination);
+
+    source.start();
+}
+
+// 🎹 PIANO UI (C C# D ...)
 const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","H"];
 
 const piano = document.getElementById("piano");
 
-// 🎹 tworzenie klawiatury
-for (let i = startNote; i <= endNote; i++) {
+const start = 48;
+const end = 84;
 
-    const note = i % 12;
+for (let i = start; i <= end; i++) {
+
+    const noteName = names[i % 12];
     const octave = Math.floor(i / 12) - 1;
 
     const key = document.createElement("div");
     key.className = "key";
-
-    key.innerHTML = `${names[note]}${octave}`;
+    key.innerText = noteName + octave;
 
     key.onclick = () => play(i);
 
     piano.appendChild(key);
 }
 
-// 🔔 PLAY (CHROMATYCZNY PITCH)
-function play(note) {
-
-    const audio = new Audio(baseFile);
-
-    // 🎯 C3 = 60 jako punkt referencyjny
-    const semitoneOffset = note - 60;
-
-    // 🔥 poprawna skala 12-TET
-    audio.playbackRate = Math.pow(2, semitoneOffset / 12);
-
-    audio.play().catch(err => {
-        console.log("Audio error:", err);
-    });
-}
-
 // 🎹 MIDI
 function connectMIDI() {
 
     if (!navigator.requestMIDIAccess) {
-        alert("Brak MIDI (użyj Chrome)");
+        alert("Brak MIDI");
         return;
     }
 
@@ -130,7 +140,7 @@ function connectMIDI() {
             };
         }
 
-        alert("MIDI podłączone 🎹");
+        alert("MIDI OK 🎹");
     });
 }
 
