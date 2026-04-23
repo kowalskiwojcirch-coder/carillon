@@ -1,166 +1,19 @@
-```html
+html
 <!DOCTYPE html>
-<html lang="pl">
-<head>
-<meta charset="UTF-8">
-<title>Carillon MIDI</title>
+<html>
+<body style="text-align:center; padding:50px;">
 
-<style>
-body {
-    font-family: Arial;
-    background: #f5f5f5;
-    text-align: center;
-}
-
-button {
-    padding: 12px 20px;
-    margin: 20px;
-    font-size: 16px;
-    background: #C7912B;
-    border: none;
-    color: white;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.piano {
-    position: relative;
-    width: 1000px;
-    height: 200px;
-    margin: auto;
-}
-
-.white {
-    width: 40px;
-    height: 200px;
-    background: white;
-    border: 1px solid #ccc;
-    float: left;
-}
-
-.black {
-    width: 25px;
-    height: 120px;
-    background: black;
-    position: absolute;
-    z-index: 2;
-    margin-left: -12px;
-}
-
-.active {
-    background: #C7912B !important;
-}
-</style>
-</head>
-
-<body>
-
-<h2>🔔 Carillon MIDI</h2>
-<button onclick="unlockAudio()">▶️ Włącz dźwięk</button>
-<button onclick="connectMIDI()">🔌 Podłącz keyboard</button>
-
-<div id="piano" class="piano"></div>
+<h2>TEST DŹWIĘKU</h2>
+<button onclick="test()">KLIKNIJ</button>
 
 <script>
-const baseFile = "C3.mp3"; // <- ZMIEŃ NA TAKĄ NAZWĘ PLIKU
-
-let audioReady = false;
-
-// odblokowanie audio
-function unlockAudio() {
-    const a = new Audio(baseFile);
-    a.play().then(() => {
-        a.pause();
-        audioReady = true;
-        alert("Dźwięk gotowy 🔊");
-    }).catch(() => {
-        alert("Kliknij jeszcze raz");
-    });
-}
-
-// piano UI
-const piano = document.getElementById("piano");
-const startNote = 48;
-const endNote = 84;
-
-const whiteNotes = [0,2,4,5,7,9,11];
-let keyMap = {};
-let activeSounds = {};
-
-function createPiano() {
-    let whiteIndex = 0;
-
-    for (let i = startNote; i <= endNote; i++) {
-        const note = i % 12;
-
-        if (whiteNotes.includes(note)) {
-            const key = document.createElement("div");
-            key.className = "white";
-            piano.appendChild(key);
-            keyMap[i] = key;
-            whiteIndex++;
-        } else {
-            const key = document.createElement("div");
-            key.className = "black";
-            key.style.left = (whiteIndex * 40 - 12) + "px";
-            piano.appendChild(key);
-            keyMap[i] = key;
-        }
-    }
-}
-
-createPiano();
-
-// granie
-function playNote(note, velocity=1) {
-    if (!audioReady) return;
-
-    const pitch = Math.pow(2, (note - 60) / 12);
-
-    const audio = new Audio(baseFile);
-    audio.playbackRate = pitch;
-    audio.volume = velocity;
-    audio.preservesPitch = false;
-
-    audio.play();
-
-    activeSounds[note] = audio;
-
-    if (keyMap[note]) keyMap[note].classList.add("active");
-}
-
-function stopNote(note) {
-    if (activeSounds[note]) {
-        activeSounds[note].pause();
-        delete activeSounds[note];
-    }
-
-    if (keyMap[note]) keyMap[note].classList.remove("active");
-}
-
-// MIDI
-function connectMIDI() {
-    if (!navigator.requestMIDIAccess) {
-        alert("Użyj Chrome!");
-        return;
-    }
-
-    navigator.requestMIDIAccess().then(midi => {
-        for (let input of midi.inputs.values()) {
-
-            input.onmidimessage = (msg) => {
-                const [cmd, note, velocity] = msg.data;
-
-                if (cmd === 144 && velocity > 0) {
-                    playNote(note, velocity / 127);
-                } else if (cmd === 128 || velocity === 0) {
-                    stopNote(note);
-                }
-            };
-        }
-
-        alert("Keyboard działa 🎹");
-    });
+function test() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    osc.frequency.value = 440;
+    osc.connect(ctx.destination);
+    osc.start();
+    setTimeout(()=>osc.stop(), 500);
 }
 </script>
 
