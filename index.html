@@ -109,7 +109,7 @@ async function initAudio() {
     alert("Audio gotowe 🔊");
 }
 
-// 🔔 PLAY (pianino + carillon pitch + natural decay)
+// 🔔 PLAY (dłuższy, naturalny carillon)
 function play(note) {
 
     if (!ctx || !buffer) return;
@@ -119,13 +119,13 @@ function play(note) {
 
     source.buffer = buffer;
 
-    // 🎹 12-TET (prawdziwa skala pianina)
+    // 🎹 dokładna skala pianina (12-TET)
     const semitone = note - 60;
     source.playbackRate.value = Math.pow(2, semitone / 12);
 
-    // 🔔 naturalny dzwon (nie za krótki, nie za długi)
-    gain.gain.setValueAtTime(0.9, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.8);
+    // 🔔 DŁUŻSZE WYBRZMIEWANIE (carillon feel)
+    gain.gain.setValueAtTime(0.95, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.6);
 
     source.connect(gain);
     gain.connect(ctx.destination);
