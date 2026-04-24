@@ -5,8 +5,6 @@
 <title>Carillon Kieczysński</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
-
-<!-- MP3 encoder -->
 <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script>
 
 <style>
@@ -16,6 +14,37 @@ body {
     background: #f5f5f5;
     margin: 0;
     padding: 20px;
+}
+
+/* 🔐 pasek hasła */
+#loginBar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #C7912B;
+    color: white;
+    padding: 10px;
+    z-index: 999;
+}
+
+#loginBar input {
+    padding: 6px;
+    border-radius: 6px;
+    border: none;
+    margin-left: 10px;
+}
+
+#loginBar button {
+    padding: 6px 12px;
+    margin-left: 5px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+}
+
+#app {
+    display: none;
 }
 
 h2 {
@@ -82,6 +111,17 @@ button:hover {
 
 <body>
 
+<!-- 🔐 LOGIN BAR -->
+<div id="loginBar">
+    🔐 Podaj hasło:
+    <input type="password" id="pass">
+    <button onclick="checkPassword()">OK</button>
+    <span id="msg"></span>
+</div>
+
+<!-- 🔊 APP -->
+<div id="app">
+
 <h2> CARILLON KIECZYŃSKI</h2>
 
 <button onclick="initAudio()">▶ WŁĄCZ DŻWIĘK </button>
@@ -91,25 +131,39 @@ button:hover {
 
 <div id="piano" class="piano"></div>
 
+</div>
+
 <script>
+
+// 🔐 HASŁO
+const PASSWORD = "kieczynskicarillon";
+
+function checkPassword() {
+    const val = document.getElementById("pass").value;
+
+    if (val === PASSWORD) {
+        document.getElementById("loginBar").style.display = "none";
+        document.getElementById("app").style.display = "block";
+    } else {
+        document.getElementById("msg").innerText = " ❌ Złe hasło";
+    }
+}
 
 let ctx;
 let buffer;
 let masterGain;
 
-// 🎙 nagrywanie
 let mediaDest;
 let mediaRecorder;
 let audioChunks = [];
 
-// 🔊 LOAD SAMPLE
+// 🔊 INIT
 async function initAudio() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
 
     masterGain = ctx.createGain();
     masterGain.connect(ctx.destination);
 
-    // nagrywanie z tego samego źródła
     mediaDest = ctx.createMediaStreamDestination();
     masterGain.connect(mediaDest);
 
@@ -142,23 +196,13 @@ function play(note) {
 
 // 🎹 UI
 const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","H"];
-
 const piano = document.getElementById("piano");
 
-const start = 48;
-const end = 84;
-
-for (let i = start; i <= end; i++) {
-
-    const noteName = names[i % 12];
-    const octave = Math.floor(i / 12) - 1;
-
+for (let i = 48; i <= 84; i++) {
     const key = document.createElement("div");
     key.className = "key";
-    key.innerText = noteName + octave;
-
+    key.innerText = names[i % 12] + (Math.floor(i / 12) - 1);
     key.onclick = () => play(i);
-
     piano.appendChild(key);
 }
 
@@ -187,13 +231,10 @@ function connectMIDI() {
     });
 }
 
-// 🔴 START REC
+// 🔴 REC
 function startRecording() {
 
-    if (!ctx) {
-        alert("Najpierw włącz dźwięk!");
-        return;
-    }
+    if (!ctx) return;
 
     audioChunks = [];
     mediaRecorder = new MediaRecorder(mediaDest.stream);
@@ -206,7 +247,6 @@ function startRecording() {
     alert("Nagrywanie start 🎙");
 }
 
-// ⏹ STOP
 function stopRecording() {
     if (mediaRecorder) mediaRecorder.stop();
 }
@@ -261,5 +301,7 @@ Instrukcja :
 -Urządzenia mobilne- (wystarczy kliknąć "Włącz dźwięk")
 
 -Urządzenia PC- (najpierw kliknij "Podłącz Midi" do keyboarda a następnie kliknij "Włącz dźwięk")
+
+Dostęp: wpisz hasło u góry strony
 
 Virsual Kieczyński - Wszelkie Prawa Zastrzeżone
