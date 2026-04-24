@@ -2,9 +2,11 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Carillon Kieczyński</title>
+<title>Carillon Kieczysński</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- MP3 encoder -->
 <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script>
 
 <style>
@@ -20,20 +22,23 @@ h2 {
     color: #4A4A4A;
     font-weight: 600;
     letter-spacing: 1px;
+    margin-top: 10px;
 }
 
 button {
     padding: 12px 22px;
-    margin: 8px;
+    margin: 10px;
     background: #C7912B;
     color: white;
     border: none;
     border-radius: 10px;
     cursor: pointer;
     font-weight: 600;
+    transition: 0.2s;
 }
 
 button:hover {
+    transform: translateY(-2px);
     background: #b37d22;
 }
 
@@ -57,22 +62,30 @@ button:hover {
     justify-content: center;
     font-size: 11px;
     user-select: none;
+    color: #4A4A4A;
+    font-weight: 600;
     border-radius: 6px;
+    transition: 0.15s;
+}
+
+.key:hover {
+    border-color: #C7912B;
+    box-shadow: 0 0 10px rgba(199,145,43,0.25);
 }
 
 .key:active {
     background: #fff6e0;
+    transform: scale(0.97);
 }
 </style>
 </head>
 
 <body>
 
-<h2>CARILLON KIECZYŃSKI</h2>
+<h2> CARILLON KIECZYŃSKI</h2>
 
-<button onclick="initAudio()">▶ WŁĄCZ DŹWIĘK</button>
+<button onclick="initAudio()">▶ WŁĄCZ DŻWIĘK </button>
 <button onclick="connectMIDI()">🔌 PODŁĄCZ MIDI</button>
-<br>
 <button onclick="startRecording()">⏺ NAGRYWAJ</button>
 <button onclick="stopRecording()">⏹ STOP I ZAPISZ</button>
 
@@ -84,18 +97,19 @@ let ctx;
 let buffer;
 let masterGain;
 
-// 🎙 NAGRYWANIE
+// 🎙 nagrywanie
 let mediaDest;
 let mediaRecorder;
 let audioChunks = [];
 
-// 🔊 INIT
+// 🔊 LOAD SAMPLE
 async function initAudio() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
 
     masterGain = ctx.createGain();
     masterGain.connect(ctx.destination);
 
+    // nagrywanie z tego samego źródła
     mediaDest = ctx.createMediaStreamDestination();
     masterGain.connect(mediaDest);
 
@@ -117,19 +131,34 @@ function play(note) {
     const semitone = note - 60;
     source.playbackRate.value = Math.pow(2, semitone / 12);
 
-    source.connect(masterGain);
+    const gain = ctx.createGain();
+    gain.gain.value = 0.6;
+
+    source.connect(gain);
+    gain.connect(masterGain);
+
     source.start();
 }
 
-// 🎹 KLAWIATURA
+// 🎹 UI
 const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","H"];
+
 const piano = document.getElementById("piano");
 
-for (let i = 48; i <= 84; i++) {
+const start = 48;
+const end = 84;
+
+for (let i = start; i <= end; i++) {
+
+    const noteName = names[i % 12];
+    const octave = Math.floor(i / 12) - 1;
+
     const key = document.createElement("div");
     key.className = "key";
-    key.innerText = names[i % 12] + (Math.floor(i / 12) - 1);
+    key.innerText = noteName + octave;
+
     key.onclick = () => play(i);
+
     piano.appendChild(key);
 }
 
@@ -147,11 +176,14 @@ function connectMIDI() {
 
             input.onmidimessage = (msg) => {
                 const [cmd, note, vel] = msg.data;
-                if (cmd === 144 && vel > 0) play(note);
+
+                if (cmd === 144 && vel > 0) {
+                    play(note);
+                }
             };
         }
 
-        alert("MIDI podłączone 🎹");
+        alert("MIDI OK 🎹");
     });
 }
 
@@ -170,7 +202,8 @@ function startRecording() {
     mediaRecorder.onstop = exportMP3;
 
     mediaRecorder.start();
-    alert("Nagrywanie rozpoczęte 🎙");
+
+    alert("Nagrywanie start 🎙");
 }
 
 // ⏹ STOP
@@ -207,7 +240,7 @@ async function exportMP3() {
     a.download = "nagranie.mp3";
     a.click();
 
-    alert("Plik MP3 zapisany 🎧");
+    alert("Zapisano MP3 🎧");
 }
 
 function convert(buffer) {
@@ -223,3 +256,10 @@ function convert(buffer) {
 
 </body>
 </html>
+
+Instrukcja : 
+-Urządzenia mobilne- (wystarczy kliknąć "Włącz dźwięk")
+
+-Urządzenia PC- (najpierw kliknij "Podłącz Midi" do keyboarda a następnie kliknij "Włącz dźwięk")
+
+Virsual Kieczyński - Wszelkie Prawa Zastrzeżone
