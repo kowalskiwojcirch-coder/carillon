@@ -5,6 +5,8 @@
 <title>Carillon Kieczysński</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- MP3 encoder -->
 <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script>
 
 <style>
@@ -13,19 +15,7 @@ body {
     text-align: center;
     background: #f5f5f5;
     margin: 0;
-    padding: 60px 20px 20px 20px;
-}
-
-#topMessage {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: #C7912B;
-    color: white;
-    padding: 10px;
-    font-weight: 600;
-    z-index: 999;
+    padding: 20px;
 }
 
 h2 {
@@ -92,10 +82,6 @@ button:hover {
 
 <body>
 
-<div id="topMessage">
-🔐 Aby korzystać ze strony, wymagane jest hasło
-</div>
-
 <h2> CARILLON KIECZYŃSKI</h2>
 
 <button onclick="initAudio()">▶ WŁĄCZ DŻWIĘK </button>
@@ -111,17 +97,19 @@ let ctx;
 let buffer;
 let masterGain;
 
+// 🎙 nagrywanie
 let mediaDest;
 let mediaRecorder;
 let audioChunks = [];
 
-// 🔊 INIT
+// 🔊 LOAD SAMPLE
 async function initAudio() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
 
     masterGain = ctx.createGain();
     masterGain.connect(ctx.destination);
 
+    // nagrywanie z tego samego źródła
     mediaDest = ctx.createMediaStreamDestination();
     masterGain.connect(mediaDest);
 
@@ -154,13 +142,23 @@ function play(note) {
 
 // 🎹 UI
 const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","H"];
+
 const piano = document.getElementById("piano");
 
-for (let i = 48; i <= 84; i++) {
+const start = 48;
+const end = 84;
+
+for (let i = start; i <= end; i++) {
+
+    const noteName = names[i % 12];
+    const octave = Math.floor(i / 12) - 1;
+
     const key = document.createElement("div");
     key.className = "key";
-    key.innerText = names[i % 12] + (Math.floor(i / 12) - 1);
+    key.innerText = noteName + octave;
+
     key.onclick = () => play(i);
+
     piano.appendChild(key);
 }
 
@@ -189,7 +187,7 @@ function connectMIDI() {
     });
 }
 
-// 🔴 REC
+// 🔴 START REC
 function startRecording() {
 
     if (!ctx) {
@@ -208,6 +206,7 @@ function startRecording() {
     alert("Nagrywanie start 🎙");
 }
 
+// ⏹ STOP
 function stopRecording() {
     if (mediaRecorder) mediaRecorder.stop();
 }
@@ -262,7 +261,5 @@ Instrukcja :
 -Urządzenia mobilne- (wystarczy kliknąć "Włącz dźwięk")
 
 -Urządzenia PC- (najpierw kliknij "Podłącz Midi" do keyboarda a następnie kliknij "Włącz dźwięk")
-
-Dostęp: wymagane hasło
 
 Virsual Kieczyński - Wszelkie Prawa Zastrzeżone
