@@ -2,9 +2,10 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Carillon Kieczysński</title>
+<title>Carillon Kieczyński</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script>
 
 <style>
 body {
@@ -19,23 +20,20 @@ h2 {
     color: #4A4A4A;
     font-weight: 600;
     letter-spacing: 1px;
-    margin-top: 10px;
 }
 
 button {
     padding: 12px 22px;
-    margin: 10px;
+    margin: 8px;
     background: #C7912B;
     color: white;
     border: none;
     border-radius: 10px;
     cursor: pointer;
     font-weight: 600;
-    transition: 0.2s;
 }
 
 button:hover {
-    transform: translateY(-2px);
     background: #b37d22;
 }
 
@@ -59,30 +57,24 @@ button:hover {
     justify-content: center;
     font-size: 11px;
     user-select: none;
-    color: #4A4A4A;
-    font-weight: 600;
     border-radius: 6px;
-    transition: 0.15s;
-}
-
-.key:hover {
-    border-color: #C7912B;
-    box-shadow: 0 0 10px rgba(199,145,43,0.25);
 }
 
 .key:active {
     background: #fff6e0;
-    transform: scale(0.97);
 }
 </style>
 </head>
 
 <body>
 
-<h2> CARILLON KIECZYŃSKI</h2>
+<h2>CARILLON KIECZYŃSKI</h2>
 
-<button onclick="initAudio()">▶ WŁĄCZ DŻWIĘK </button>
+<button onclick="initAudio()">▶ WŁĄCZ DŹWIĘK</button>
 <button onclick="connectMIDI()">🔌 PODŁĄCZ MIDI</button>
+<br>
+<button onclick="startRecording()">⏺ NAGRYWAJ</button>
+<button onclick="stopRecording()">⏹ STOP I ZAPISZ</button>
 
 <div id="piano" class="piano"></div>
 
@@ -90,10 +82,22 @@ button:hover {
 
 let ctx;
 let buffer;
+let masterGain;
 
-// 🔥 LOAD SAMPLE ONCE
+// 🎙 NAGRYWANIE
+let mediaDest;
+let mediaRecorder;
+let audioChunks = [];
+
+// 🔊 INIT
 async function initAudio() {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    masterGain = ctx.createGain();
+    masterGain.connect(ctx.destination);
+
+    mediaDest = ctx.createMediaStreamDestination();
+    masterGain.connect(mediaDest);
 
     const res = await fetch("C3.mp3");
     const arr = await res.arrayBuffer();
@@ -102,47 +106,30 @@ async function initAudio() {
     alert("Audio gotowe 🔊");
 }
 
-// 🎼 PLAY (pitch jak pianino)
+// 🎼 PLAY
 function play(note) {
 
     if (!buffer || !ctx) return;
 
     const source = ctx.createBufferSource();
-    const gain = ctx.createGain();
-
     source.buffer = buffer;
 
-    // 🎹 12-TET
     const semitone = note - 60;
     source.playbackRate.value = Math.pow(2, semitone / 12);
 
-    gain.gain.value = 0.6;
-
-    source.connect(gain);
-    gain.connect(ctx.destination);
-
+    source.connect(masterGain);
     source.start();
 }
 
-// 🎹 UI
+// 🎹 KLAWIATURA
 const names = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","H"];
-
 const piano = document.getElementById("piano");
 
-const start = 48;
-const end = 84;
-
-for (let i = start; i <= end; i++) {
-
-    const noteName = names[i % 12];
-    const octave = Math.floor(i / 12) - 1;
-
+for (let i = 48; i <= 84; i++) {
     const key = document.createElement("div");
     key.className = "key";
-    key.innerText = noteName + octave;
-
+    key.innerText = names[i % 12] + (Math.floor(i / 12) - 1);
     key.onclick = () => play(i);
-
     piano.appendChild(key);
 }
 
@@ -160,25 +147,79 @@ function connectMIDI() {
 
             input.onmidimessage = (msg) => {
                 const [cmd, note, vel] = msg.data;
-
-                if (cmd === 144 && vel > 0) {
-                    play(note);
-                }
+                if (cmd === 144 && vel > 0) play(note);
             };
         }
 
-        alert("MIDI OK 🎹");
+        alert("MIDI podłączone 🎹");
     });
+}
+
+// 🔴 START REC
+function startRecording() {
+
+    if (!ctx) {
+        alert("Najpierw włącz dźwięk!");
+        return;
+    }
+
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(mediaDest.stream);
+
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = exportMP3;
+
+    mediaRecorder.start();
+    alert("Nagrywanie rozpoczęte 🎙");
+}
+
+// ⏹ STOP
+function stopRecording() {
+    if (mediaRecorder) mediaRecorder.stop();
+}
+
+// 💾 MP3
+async function exportMP3() {
+
+    const blob = new Blob(audioChunks);
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+    const samples = audioBuffer.getChannelData(0);
+    const mp3encoder = new lamejs.Mp3Encoder(1, 44100, 128);
+
+    let mp3Data = [];
+    let blockSize = 1152;
+
+    for (let i = 0; i < samples.length; i += blockSize) {
+        let chunk = samples.subarray(i, i + blockSize);
+        let mp3buf = mp3encoder.encodeBuffer(convert(chunk));
+        if (mp3buf.length > 0) mp3Data.push(mp3buf);
+    }
+
+    let mp3buf = mp3encoder.flush();
+    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+
+    const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(mp3Blob);
+    a.download = "nagranie.mp3";
+    a.click();
+
+    alert("Plik MP3 zapisany 🎧");
+}
+
+function convert(buffer) {
+    let l = buffer.length;
+    let buf = new Int16Array(l);
+    while (l--) {
+        buf[l] = Math.min(1, buffer[l]) * 0x7fff;
+    }
+    return buf;
 }
 
 </script>
 
 </body>
 </html>
-
-Instrukcja : 
--Urządzenia mobilne- (wystarczy kliknąć "Włącz dźwięk")
-
--Urządzenia PC- (najpierw kliknij "Podłącz Midi" do keyboarda a następnie kliknij "Włącz dźwięk")
-
-Virsual Kieczyński - Wszelkie Prawa Zastrzeżone
