@@ -13,11 +13,10 @@ body {
     text-align: center;
     background: #f5f5f5;
     margin: 0;
-    padding: 20px;
+    padding: 60px 20px 20px 20px;
 }
 
-/* 🔐 pasek hasła */
-#loginBar {
+#topMessage {
     position: fixed;
     top: 0;
     left: 0;
@@ -25,26 +24,8 @@ body {
     background: #C7912B;
     color: white;
     padding: 10px;
+    font-weight: 600;
     z-index: 999;
-}
-
-#loginBar input {
-    padding: 6px;
-    border-radius: 6px;
-    border: none;
-    margin-left: 10px;
-}
-
-#loginBar button {
-    padding: 6px 12px;
-    margin-left: 5px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-}
-
-#app {
-    display: none;
 }
 
 h2 {
@@ -111,16 +92,9 @@ button:hover {
 
 <body>
 
-<!-- 🔐 LOGIN BAR -->
-<div id="loginBar">
-    🔐 Podaj hasło:
-    <input type="password" id="pass">
-    <button onclick="checkPassword()">OK</button>
-    <span id="msg"></span>
+<div id="topMessage">
+🔐 Aby korzystać ze strony, wymagane jest hasło
 </div>
-
-<!-- 🔊 APP -->
-<div id="app">
 
 <h2> CARILLON KIECZYŃSKI</h2>
 
@@ -131,23 +105,7 @@ button:hover {
 
 <div id="piano" class="piano"></div>
 
-</div>
-
 <script>
-
-// 🔐 HASŁO
-const PASSWORD = "kieczynskicarillon";
-
-function checkPassword() {
-    const val = document.getElementById("pass").value;
-
-    if (val === PASSWORD) {
-        document.getElementById("loginBar").style.display = "none";
-        document.getElementById("app").style.display = "block";
-    } else {
-        document.getElementById("msg").innerText = " ❌ Złe hasło";
-    }
-}
 
 let ctx;
 let buffer;
@@ -234,7 +192,10 @@ function connectMIDI() {
 // 🔴 REC
 function startRecording() {
 
-    if (!ctx) return;
+    if (!ctx) {
+        alert("Najpierw włącz dźwięk!");
+        return;
+    }
 
     audioChunks = [];
     mediaRecorder = new MediaRecorder(mediaDest.stream);
@@ -302,6 +263,6 @@ Instrukcja :
 
 -Urządzenia PC- (najpierw kliknij "Podłącz Midi" do keyboarda a następnie kliknij "Włącz dźwięk")
 
-Dostęp: wpisz hasło u góry strony
+Dostęp: wymagane hasło
 
 Virsual Kieczyński - Wszelkie Prawa Zastrzeżone
